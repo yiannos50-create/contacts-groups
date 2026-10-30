@@ -128,6 +128,10 @@ async function api(path, opts = {}, retried = false) {
 
 // ---------- Loading contacts ----------
 
+// Group names match ignoring capitals, accents and spaces (ΕΞΟΜΟΛΟΓΗΣΗ = Εξομολόγηση).
+const fold = (s) => s.normalize('NFD').replace(/\p{M}/gu, '').replace(/\s+/g, ' ').trim()
+  .toLocaleLowerCase('el').replace(/ς/g, 'σ');
+
 function personView(raw) {
   const name = raw.names?.[0]?.displayName || '';
   const phone = raw.phoneNumbers?.[0]?.value || '';
@@ -145,11 +149,11 @@ async function loadAll() {
     const g = await api('/contactGroups?pageSize=1000&groupFields=name,groupType');
     state.groups.clear();
     state.groupRes = null;
-    const want = state.groupName.normalize('NFC').trim().toLocaleLowerCase();
+    const want = fold(state.groupName);
     for (const grp of g.contactGroups || []) {
       if (grp.groupType !== 'USER_CONTACT_GROUP') continue;
       state.groups.set(grp.resourceName, grp.name);
-      if (grp.name.normalize('NFC').trim().toLocaleLowerCase() === want) state.groupRes = grp.resourceName;
+      if (fold(grp.name) === want) state.groupRes = grp.resourceName;
     }
 
     const people = [];
@@ -270,6 +274,15 @@ function render() {
   $('groupTabName').textContent = state.groupName;
   $('missingGroupName').textContent = state.groupName;
   $('missingGroup').hidden = !!state.groupRes || state.people.length === 0;
+  if (!state.groupRes) {
+    const picks = [...state.groups.values()].sort((a, b) => a.localeCompare(b)).map((name) => {
+      const b = el('button', null, name);
+      b.onclick = () => { state.groupName = name; store.set('groupName', name); loadAll(); };
+      return b;
+    });
+    $('groupPicks').replaceChildren(...picks);
+    $('groupPicksWrap').hidden = picks.length === 0;
+  }
   $('otherFilter').hidden = state.tab !== 'other';
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === state.tab));
   updateCounts();

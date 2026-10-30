@@ -1,6 +1,6 @@
 // Caches only the app's own files so it opens fast and installs.
 // Contacts and Google requests are never cached.
-const CACHE = 'contacts-groups-v1';
+const CACHE = 'contacts-groups-v2';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
