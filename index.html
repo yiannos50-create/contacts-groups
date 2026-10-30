@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contacts Groups</title>
+  <meta name="theme-color" content="#1f4e79">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Contacts Groups</h1>
+    <div class="topbar-actions">
+      <button id="refreshBtn" class="ghost" hidden title="Reload contacts from Google (R)">Refresh</button>
+      <button id="settingsBtn" class="ghost" title="Settings">⚙ Settings</button>
+      <button id="signOutBtn" class="ghost" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- First run: paste the Client ID -->
+    <section id="setupView" class="card" hidden>
+      <h2>One-time setup</h2>
+      <p>Paste the <b>Client ID</b> from your Google Cloud project. It looks like
+        <code>123456-abc.apps.googleusercontent.com</code>.</p>
+      <label>Client ID <input id="clientIdInput" autocomplete="off" spellcheck="false"></label>
+      <label>Group name <input id="groupNameInput" spellcheck="false"></label>
+      <button id="saveSetupBtn" class="primary">Save</button>
+    </section>
+
+    <!-- Signed out -->
+    <section id="signInView" class="card center" hidden>
+      <h2>Sign in</h2>
+      <p>Sign in with the Google account that holds your contacts.</p>
+      <button id="signInBtn" class="primary">Sign in with Google</button>
+    </section>
+
+    <!-- Signed in -->
+    <section id="appView" hidden>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="group" role="tab">
+          <span id="groupTabName">Εξομολόγηση</span> <span class="count" id="groupCount">0</span>
+        </button>
+        <button class="tab" data-tab="other" role="tab">
+          Other contacts <span class="count" id="otherCount">0</span>
+        </button>
+      </nav>
+
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="Search name, phone or notes  ( / )" autocomplete="off">
+        <select id="otherFilter" hidden>
+          <option value="all">All not in group</option>
+          <option value="none">No group</option>
+        </select>
+      </div>
+
+      <div id="missingGroup" class="card warn" hidden>
+        <p>There is no group called <b id="missingGroupName"></b> in your contacts yet.</p>
+        <button id="createGroupBtn" class="primary">Create it</button>
+      </div>
+
+      <ul id="list" class="list"></ul>
+      <p id="empty" class="empty" hidden>No contacts here.</p>
+    </section>
+
+    <p id="status" class="status" aria-live="polite"></p>
+  </main>
+
+  <dialog id="editDialog">
+    <form method="dialog" id="editForm">
+      <h2>Edit contact</h2>
+      <label>Full name <input id="editName" required></label>
+      <label>Phone number <input id="editPhone" type="tel"></label>
+      <label>Notes <textarea id="editNotes" rows="5"></textarea></label>
+      <p class="hint" id="editHint"></p>
+      <div class="dialog-actions">
+        <button value="cancel" class="ghost" formnovalidate>Cancel</button>
+        <button value="save" class="primary">Save  (Ctrl+Enter)</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
