@@ -198,9 +198,18 @@ function enqueue(p, job) {
 const inGroup = (p) => state.groupRes && p.groupIds.includes(state.groupRes);
 
 function setGroup(p, add) {
+  return setGroups(p, add ? [state.groupRes] : [], add ? [] : [state.groupRes]);
+}
+
+// Adds the contact to some groups and takes it out of others, then reloads it.
+function setGroups(p, addTo, removeFrom) {
   return enqueue(p, async () => {
-    const body = add ? { resourceNamesToAdd: [p.id] } : { resourceNamesToRemove: [p.id] };
-    await api(`/${state.groupRes}/members:modify`, { method: 'POST', body: JSON.stringify(body) });
+    for (const g of addTo) {
+      await api(`/${g}/members:modify`, { method: 'POST', body: JSON.stringify({ resourceNamesToAdd: [p.id] }) });
+    }
+    for (const g of removeFrom) {
+      await api(`/${g}/members:modify`, { method: 'POST', body: JSON.stringify({ resourceNamesToRemove: [p.id] }) });
+    }
     await refetchPerson(p);
   });
 }
@@ -425,9 +434,23 @@ function openEdit(p) {
   $('editNotes').value = p.notes;
   const n = p.raw.phoneNumbers?.length || 0;
   $('editHint').textContent = n > 1 ? `This contact has ${n} phone numbers. Only the first one is shown and changed here.` : '';
+  const boxes = [...state.groups].sort((a, b) => a[1].localeCompare(b[1])).map(([id, name]) => {
+    const lab = el('label', 'group-pick');
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.value = id;
+    box.checked = p.groupIds.includes(id);
+    lab.append(box, ' ' + name);
+    return lab;
+  });
+  $('editGroups').replaceChildren(...boxes);
   $('editDialog').showModal();
   $('editName').focus();
 }
+
+$('editNoGroup').onclick = () => {
+  $('editGroups').querySelectorAll('input').forEach((b) => (b.checked = false));
+};
 
 $('editForm').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); $('editDialog').close('save'); }
@@ -449,10 +472,14 @@ $('editDialog').addEventListener('close', async () => {
     changes.phoneNumbers = list;
   }
   if (notes !== p.notesSaved) Object.assign(changes, notesPayload(notes));
-  if (!Object.keys(changes).length) return;
+  const picked = [...$('editGroups').querySelectorAll('input:checked')].map((b) => b.value);
+  const addTo = picked.filter((g) => !p.groupIds.includes(g));
+  const removeFrom = p.groupIds.filter((g) => !picked.includes(g));
+  if (!Object.keys(changes).length && !addTo.length && !removeFrom.length) return;
   status('Saving…', false, true);
   try {
-    await updatePerson(p, changes);
+    if (addTo.length || removeFrom.length) await setGroups(p, addTo, removeFrom);
+    if (Object.keys(changes).length) await updatePerson(p, changes);
     p.notes = p.notesSaved;
     status('Saved.');
     render();
