@@ -75,7 +75,7 @@
     </section>
 
     <p id="status" class="status" aria-live="polite"></p>
-    <p class="version">Version 5</p>
+    <p class="version">Version 6</p>
   </main>
 
   <dialog id="editDialog">
@@ -88,6 +88,10 @@
         <legend>Groups</legend>
         <div id="editGroups"></div>
         <button type="button" id="editNoGroup" class="ghost">No group (untick all)</button>
+        <div class="new-group">
+          <input id="newGroupName" placeholder="New group name" autocomplete="off">
+          <button type="button" id="newGroupBtn">+ Add group</button>
+        </div>
       </fieldset>
       <p class="hint" id="editHint"></p>
       <div class="dialog-actions">

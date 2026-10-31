@@ -130,3 +130,6 @@ button.danger { color: var(--danger); border-color: var(--danger); background: t
 label.group-pick { display: flex; align-items: center; gap: 6px; margin: 4px 0; font-weight: 400; font-size: 15px; }
 label.group-pick input { width: 20px; height: 20px; margin: 0; accent-color: var(--ok); }
 .version { text-align: center; color: var(--muted); font-size: 12px; margin-top: 24px; }
+.new-group { display: flex; gap: 6px; margin-top: 8px; }
+.new-group input { flex: 1; }
+.new-group button { white-space: nowrap; }

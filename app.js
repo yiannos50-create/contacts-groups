@@ -434,19 +434,54 @@ function openEdit(p) {
   $('editNotes').value = p.notes;
   const n = p.raw.phoneNumbers?.length || 0;
   $('editHint').textContent = n > 1 ? `This contact has ${n} phone numbers. Only the first one is shown and changed here.` : '';
-  const boxes = [...state.groups].sort((a, b) => a[1].localeCompare(b[1])).map(([id, name]) => {
-    const lab = el('label', 'group-pick');
-    const box = document.createElement('input');
-    box.type = 'checkbox';
-    box.value = id;
-    box.checked = p.groupIds.includes(id);
-    lab.append(box, ' ' + name);
-    return lab;
-  });
+  const boxes = [...state.groups].sort((a, b) => a[1].localeCompare(b[1]))
+    .map(([id, name]) => groupBox(id, name, p.groupIds.includes(id)));
+  $('newGroupName').value = '';
   $('editGroups').replaceChildren(...boxes);
   $('editDialog').showModal();
   $('editName').focus();
 }
+
+function groupBox(id, name, checked) {
+  const lab = el('label', 'group-pick');
+  const box = document.createElement('input');
+  box.type = 'checkbox';
+  box.value = id;
+  box.checked = checked;
+  lab.append(box, ' ' + name);
+  return lab;
+}
+
+// Creates a new Google Contacts group and ticks it for the contact being edited.
+async function addGroup() {
+  const name = $('newGroupName').value.trim();
+  if (!name) { $('newGroupName').focus(); return; }
+  const existing = [...state.groups].find(([, n]) => fold(n) === fold(name));
+  if (existing) {
+    const box = $('editGroups').querySelector(`input[value="${existing[0]}"]`);
+    if (box) box.checked = true;
+    $('newGroupName').value = '';
+    return;
+  }
+  $('newGroupBtn').disabled = true;
+  try {
+    const g = await api('/contactGroups', { method: 'POST', body: JSON.stringify({ contactGroup: { name } }) });
+    state.groups.set(g.resourceName, g.name);
+    $('editGroups').append(groupBox(g.resourceName, g.name, true));
+    $('newGroupName').value = '';
+    fillOtherFilter();
+    status(`Created group ${g.name}. Tap Save to put this contact in it.`);
+  } catch (e) {
+    status('Could not create the group: ' + e.message, true, true);
+  } finally {
+    $('newGroupBtn').disabled = false;
+  }
+}
+
+$('newGroupBtn').onclick = addGroup;
+$('newGroupName').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); addGroup(); }
+});
 
 $('editNoGroup').onclick = () => {
   $('editGroups').querySelectorAll('input').forEach((b) => (b.checked = false));
@@ -454,6 +489,8 @@ $('editNoGroup').onclick = () => {
 
 $('editForm').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); $('editDialog').close('save'); }
+  // Plain Enter in a text box must not press the first button (Delete).
+  else if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.preventDefault();
 });
 
 $('editDialog').addEventListener('close', async () => {
