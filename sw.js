@@ -1,6 +1,6 @@
 // Caches only the app's own files so it opens fast and installs.
 // Contacts and Google requests are never cached.
-const CACHE = 'contacts-groups-v4';
+const CACHE = 'contacts-groups-v5';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -18,7 +18,8 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
   e.respondWith(
-    fetch(e.request)
+    // no-cache: always ask GitHub for the newest file, never a stale browser copy.
+    fetch(e.request, { cache: 'no-cache' })
       .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy));

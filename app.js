@@ -664,6 +664,11 @@ window.addEventListener('beforeunload', (e) => {
   if (state.people.some((p) => p.notes !== p.notesSaved)) e.preventDefault();
 });
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator) {
+  // When an update arrives, reload once so the new version is used straight away.
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) location.reload(); });
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((r) => r.update()).catch(() => {});
+}
 
 start();

@@ -129,3 +129,4 @@ button.danger { color: var(--danger); border-color: var(--danger); background: t
 #editGroups { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 2px 12px; max-height: 40vh; overflow: auto; }
 label.group-pick { display: flex; align-items: center; gap: 6px; margin: 4px 0; font-weight: 400; font-size: 15px; }
 label.group-pick input { width: 20px; height: 20px; margin: 0; accent-color: var(--ok); }
+.version { text-align: center; color: var(--muted); font-size: 12px; margin-top: 24px; }
