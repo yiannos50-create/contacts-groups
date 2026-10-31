@@ -6,7 +6,7 @@
 
 const SCOPE = 'https://www.googleapis.com/auth/contacts';
 const API = 'https://people.googleapis.com/v1';
-const PERSON_FIELDS = 'names,phoneNumbers,memberships,biographies';
+const PERSON_FIELDS = 'names,phoneNumbers,emailAddresses,memberships,biographies';
 const DEFAULT_GROUP = 'Εξομολόγηση';
 
 const $ = (id) => document.getElementById(id);
@@ -497,6 +497,50 @@ document.addEventListener('keydown', (e) => {
   }
   e.preventDefault();
 });
+
+// ---------- Send to PMIS ----------
+
+// Saves the contacts on screen as a Google CSV file, the format PMIS's
+// "Import Google contacts" reads. PMIS skips people it already has and turns
+// the group names into PMIS groups.
+const csvCell = (v) => (/[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v);
+
+function pmisCsv(people) {
+  const maxPhones = Math.max(1, ...people.map((p) => p.raw.phoneNumbers?.length || 0));
+  const maxEmails = Math.max(1, ...people.map((p) => p.raw.emailAddresses?.length || 0));
+  const head = ['Name', 'First Name', 'Middle Name', 'Last Name', 'Notes', 'Labels'];
+  for (let i = 1; i <= maxPhones; i++) head.push(`Phone ${i} - Label`, `Phone ${i} - Value`);
+  for (let i = 1; i <= maxEmails; i++) head.push(`E-mail ${i} - Label`, `E-mail ${i} - Value`);
+  const rows = people.map((p) => {
+    const n = p.raw.names?.[0] || {};
+    const labels = p.groupIds.map((g) => state.groups.get(g)).filter(Boolean);
+    const row = [p.name, n.givenName || '', n.middleName || '', n.familyName || '', p.notesSaved, labels.join(' ::: ')];
+    for (let i = 0; i < maxPhones; i++) { const x = p.raw.phoneNumbers?.[i]; row.push(x?.formattedType || '', x?.value || ''); }
+    for (let i = 0; i < maxEmails; i++) { const x = p.raw.emailAddresses?.[i]; row.push(x?.formattedType || '', x?.value || ''); }
+    return row;
+  });
+  return '\ufeff' + [head, ...rows].map((r) => r.map((v) => csvCell(String(v))).join(',')).join('\r\n') + '\r\n';
+}
+
+function sendToPmis() {
+  const people = visiblePeople().filter((p) => p.name); // PMIS skips contacts without a name
+  if (!people.length) { status('No named contacts on screen to send.', true); return; }
+  const where = state.tab === 'group' ? state.groupName : 'Other contacts';
+  if (!confirm(`Save ${people.length} contact${people.length === 1 ? '' : 's'} from "${where}" for PMIS?\n\n` +
+    'Then open PMIS, choose Import Google contacts and pick the saved file.\n' +
+    'The file is not encrypted, so delete it from Downloads after importing.')) return;
+  const blob = new Blob([pmisCsv(people)], { type: 'text/csv;charset=utf-8' });
+  const a = el('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `contacts-for-PMIS-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  status(`Saved ${people.length} contacts for PMIS. Open PMIS → Import Google contacts.`, false, true);
+}
+
+$('pmisBtn').onclick = sendToPmis;
 
 // ---------- Screens ----------
 
