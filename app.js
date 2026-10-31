@@ -328,7 +328,9 @@ function render() {
 
   const list = $('list');
   const people = visiblePeople();
+  const y = window.scrollY;
   list.replaceChildren(...people.map(rowFor));
+  window.scrollTo(0, y);
   $('empty').hidden = people.length > 0 || state.people.length === 0;
   renderElsewhere();
   state.focusIndex = Math.min(state.focusIndex, people.length - 1);
@@ -407,11 +409,12 @@ async function toggleGroup(p, box, li) {
     await setGroup(p, add);
     if (add) state.justAdded.add(p.id); else state.justAdded.delete(p.id);
     status(add ? `Added ${p.name} to ${state.groupName}.` : `Removed ${p.name} from ${state.groupName}.`);
+    updateCounts();
+    // Change only this row, so the list stays where you were.
+    if (!add && !inTab(p, state.tab)) { li.remove(); $('empty').hidden = $('list').children.length > 0; return; }
     const fresh = rowFor(p);
     li.replaceWith(fresh);
-    updateCounts();
-    if (add) fresh.querySelector('textarea')?.focus();
-    else if (state.tab === 'group') render();
+    if (add) fresh.querySelector('textarea')?.focus({ preventScroll: true });
   } catch (e) {
     box.checked = !add;
     box.disabled = false;
