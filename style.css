@@ -146,3 +146,15 @@ label.group-pick input { width: 20px; height: 20px; margin: 0; accent-color: var
   background: var(--brand); color: var(--brand-text); border: none;
   box-shadow: 0 2px 8px rgba(0,0,0,.3);
 }
+.az-index {
+  position: fixed; right: 2px; top: 96px; bottom: 84px; z-index: 6;
+  display: flex; flex-direction: column; justify-content: space-evenly; align-items: center;
+  width: 22px; touch-action: none; user-select: none; cursor: pointer;
+}
+.az-index span { font-size: clamp(8px, 1.6vh, 12px); font-weight: 600; color: var(--brand); line-height: 1; padding: 0 4px; }
+.az-bubble {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 7;
+  width: 72px; height: 72px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+  font-size: 36px; font-weight: 700; background: var(--brand); color: var(--brand-text); opacity: .9; pointer-events: none;
+}
+body.has-index main { padding-right: 30px; }

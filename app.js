@@ -323,11 +323,7 @@ function render() {
     $('groupPicksWrap').hidden = picks.length === 0;
   }
   $('groupFilterWrap').hidden = state.tab !== 'other';
-  // Back-to-top arrow appears once you have scrolled down a screen.
-window.addEventListener('scroll', () => { $('toTop').hidden = window.scrollY < window.innerHeight; }, { passive: true });
-$('toTop').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
-
-document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === state.tab));
+  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === state.tab));
   updateCounts();
 
   const list = $('list');
@@ -335,6 +331,7 @@ document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.
   const y = window.scrollY;
   list.replaceChildren(...people.map(rowFor));
   window.scrollTo(0, y);
+  renderIndex();
   $('empty').hidden = people.length > 0 || state.people.length === 0;
   renderElsewhere();
   state.focusIndex = Math.min(state.focusIndex, people.length - 1);
@@ -344,6 +341,7 @@ document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.
 function rowFor(p) {
   const li = el('li', 'row');
   li.dataset.id = p.id;
+  li.dataset.letter = letterOf(p);
 
   const box = document.createElement('input');
   box.type = 'checkbox';
@@ -711,6 +709,52 @@ $('createGroupBtn').onclick = async () => {
     status('Could not create the group: ' + e.message, true, true);
   }
 };
+
+// ---------- Letter bar (like the phone's Contacts app) ----------
+
+function letterOf(p) {
+  const c = fold(p.name || '').charAt(0);
+  return /\p{L}/u.test(c) ? c.toLocaleUpperCase('el') : '#';
+}
+
+function renderIndex() {
+  const seen = [];
+  for (const li of $('list').children) {
+    if (!seen.includes(li.dataset.letter)) seen.push(li.dataset.letter);
+  }
+  const bar = $('azIndex');
+  bar.replaceChildren(...seen.map((l) => el('span', null, l)));
+  bar.hidden = seen.length < 2;
+  document.body.classList.toggle('has-index', !bar.hidden);
+}
+
+function jumpTo(letter) {
+  const row = [...$('list').children].find((li) => li.dataset.letter === letter);
+  if (!row) return;
+  const header = document.querySelector('.topbar').offsetHeight;
+  window.scrollTo(0, row.getBoundingClientRect().top + window.scrollY - header - 8);
+  const bubble = $('azBubble');
+  bubble.textContent = letter;
+  bubble.hidden = false;
+  clearTimeout(jumpTo.t);
+  jumpTo.t = setTimeout(() => (bubble.hidden = true), 600);
+}
+
+// Tap a letter, or slide a finger along the bar.
+function indexPointer(e) {
+  const hit = document.elementFromPoint(e.clientX, e.clientY);
+  if (hit?.parentElement === $('azIndex')) jumpTo(hit.textContent);
+}
+$('azIndex').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  $('azIndex').setPointerCapture(e.pointerId);
+  indexPointer(e);
+});
+$('azIndex').addEventListener('pointermove', (e) => { if (e.buttons || e.pointerType === 'touch') indexPointer(e); });
+
+// Back-to-top arrow appears once you have scrolled down a screen.
+window.addEventListener('scroll', () => { $('toTop').hidden = window.scrollY < window.innerHeight; }, { passive: true });
+$('toTop').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
 document.querySelectorAll('.tab').forEach((t) => (t.onclick = () => switchTab(t.dataset.tab)));
 $('search').oninput = () => { state.focusIndex = -1; render(); };
