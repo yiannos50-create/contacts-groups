@@ -34,6 +34,8 @@ const state = {
   tab: 'group',
   justAdded: new Set(),    // kept visible in "Other" right after ticking
   focusIndex: -1,
+  filterGroups: new Set(), // group ids picked in Other contacts ('none' = no group)
+  filterMode: 'any',
   queues: new Map(),       // resourceName -> promise chain, so saves never overlap
 };
 
@@ -244,13 +246,14 @@ const notesPayload = (text) => ({ biographies: text.trim() ? [{ value: text, con
 
 // ---------- Rendering ----------
 
+// Other contacts: with no group buttons picked, everyone not in the main group.
+// With buttons picked, everyone in any (or all) of the picked groups.
 function inTab(p, tab) {
   if (tab === 'group') return !!inGroup(p);
-  const filter = $('otherFilter').value;
-  if (inGroup(p) && !state.justAdded.has(p.id)) return false;
-  if (filter === 'none' && p.groupIds.some((g) => g !== state.groupRes)) return false;
-  if (filter !== 'all' && filter !== 'none' && !p.groupIds.includes(filter)) return false;
-  return true;
+  const picked = [...state.filterGroups];
+  if (!picked.length) return !inGroup(p) || state.justAdded.has(p.id);
+  const has = (g) => (g === 'none' ? p.groupIds.length === 0 : p.groupIds.includes(g));
+  return state.filterMode === 'all' ? picked.every(has) : picked.some(has);
 }
 
 // Search ignores capitals and accents; 3 or more digits also match phone numbers.
@@ -277,18 +280,27 @@ function renderElsewhere() {
   if (!n) return;
   const label = other === 'group' ? state.groupName : 'Other contacts';
   const b = el('button', 'ghost', `${n} more match${n === 1 ? '' : 'es'} in ${label} →`);
-  b.onclick = () => { if (other === 'other') $('otherFilter').value = 'all'; switchTab(other); };
+  b.onclick = () => { if (other === 'other') state.filterGroups.clear(); switchTab(other); };
   box.replaceChildren(b);
 }
 
 function fillOtherFilter() {
-  const sel = $('otherFilter');
-  const keep = sel.value;
-  sel.replaceChildren(new Option('All not in group', 'all'), new Option('No group', 'none'));
-  [...state.groups].filter(([id]) => id !== state.groupRes)
-    .sort((a, b) => a[1].localeCompare(b[1]))
-    .forEach(([id, name]) => sel.add(new Option('Group: ' + name, id)));
-  sel.value = [...sel.options].some((o) => o.value === keep) ? keep : 'all';
+  for (const g of state.filterGroups) if (g !== 'none' && !state.groups.has(g)) state.filterGroups.delete(g);
+  const groups = [...state.groups].sort((a, b) => a[1].localeCompare(b[1]));
+  const chips = [['none', 'No group'], ...groups].map(([id, name]) => {
+    const b = el('button', 'filter-chip', name);
+    b.setAttribute('aria-pressed', state.filterGroups.has(id));
+    b.onclick = () => {
+      if (state.filterGroups.has(id)) state.filterGroups.delete(id); else state.filterGroups.add(id);
+      fillOtherFilter();
+      render();
+    };
+    return b;
+  });
+  $('groupFilter').replaceChildren(...chips);
+  const n = state.filterGroups.size;
+  $('filterMode').hidden = n < 2;
+  $('filterClear').hidden = n === 0;
 }
 
 function updateCounts() {
@@ -310,7 +322,7 @@ function render() {
     $('groupPicks').replaceChildren(...picks);
     $('groupPicksWrap').hidden = picks.length === 0;
   }
-  $('otherFilter').hidden = state.tab !== 'other';
+  $('groupFilterWrap').hidden = state.tab !== 'other';
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === state.tab));
   updateCounts();
 
@@ -695,7 +707,8 @@ $('createGroupBtn').onclick = async () => {
 
 document.querySelectorAll('.tab').forEach((t) => (t.onclick = () => switchTab(t.dataset.tab)));
 $('search').oninput = () => { state.focusIndex = -1; render(); };
-$('otherFilter').onchange = render;
+$('filterMode').onchange = () => { state.filterMode = $('filterMode').value; render(); };
+$('filterClear').onclick = () => { state.filterGroups.clear(); fillOtherFilter(); render(); };
 
 window.addEventListener('beforeunload', (e) => {
   if (state.people.some((p) => p.notes !== p.notesSaved)) e.preventDefault();

@@ -133,3 +133,9 @@ label.group-pick input { width: 20px; height: 20px; margin: 0; accent-color: var
 .new-group { display: flex; gap: 6px; margin-top: 8px; }
 .new-group input { flex: 1; }
 .new-group button { white-space: nowrap; }
+#groupFilterWrap { margin-bottom: 10px; }
+.filter-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; font-size: 14px; color: var(--muted); }
+.filter-head select { width: auto; padding: 4px 8px; }
+.filter-head button { padding: 4px 10px; }
+.filter-chip { padding: 4px 12px; border-radius: 16px; font-size: 14px; }
+.filter-chip[aria-pressed="true"] { background: var(--brand); color: var(--brand-text); border-color: var(--brand); }

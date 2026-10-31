@@ -52,11 +52,19 @@
 
       <div class="toolbar">
         <input id="search" type="search" placeholder="Search name, phone or notes  ( / )" autocomplete="off">
-        <select id="otherFilter" hidden>
-          <option value="all">All not in group</option>
-          <option value="none">No group</option>
-        </select>
         <button id="pmisBtn" title="Save the contacts on screen as a file for PMIS's Import Google contacts">Send to PMIS</button>
+      </div>
+
+      <div id="groupFilterWrap" hidden>
+        <div class="filter-head">
+          <span id="filterLabel">Show groups (tap one or more):</span>
+          <select id="filterMode" hidden>
+            <option value="any">In any of them</option>
+            <option value="all">In all of them</option>
+          </select>
+          <button id="filterClear" class="ghost" hidden>Clear</button>
+        </div>
+        <div id="groupFilter" class="picks"></div>
       </div>
 
       <div id="missingGroup" class="card warn" hidden>
@@ -75,7 +83,7 @@
     </section>
 
     <p id="status" class="status" aria-live="polite"></p>
-    <p class="version">Version 6</p>
+    <p class="version">Version 7</p>
   </main>
 
   <dialog id="editDialog">
