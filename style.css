@@ -139,3 +139,10 @@ label.group-pick input { width: 20px; height: 20px; margin: 0; accent-color: var
 .filter-head button { padding: 4px 10px; }
 .filter-chip { padding: 4px 12px; border-radius: 16px; font-size: 14px; }
 .filter-chip[aria-pressed="true"] { background: var(--brand); color: var(--brand-text); border-color: var(--brand); }
+.to-top {
+  position: fixed; right: 16px; bottom: 20px; z-index: 6;
+  width: 52px; height: 52px; border-radius: 50%; padding: 0;
+  font-size: 26px; line-height: 1;
+  background: var(--brand); color: var(--brand-text); border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}

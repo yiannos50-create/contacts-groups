@@ -323,7 +323,11 @@ function render() {
     $('groupPicksWrap').hidden = picks.length === 0;
   }
   $('groupFilterWrap').hidden = state.tab !== 'other';
-  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === state.tab));
+  // Back-to-top arrow appears once you have scrolled down a screen.
+window.addEventListener('scroll', () => { $('toTop').hidden = window.scrollY < window.innerHeight; }, { passive: true });
+$('toTop').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === state.tab));
   updateCounts();
 
   const list = $('list');
