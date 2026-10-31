@@ -235,23 +235,41 @@ const notesPayload = (text) => ({ biographies: text.trim() ? [{ value: text, con
 
 // ---------- Rendering ----------
 
-function visiblePeople() {
-  const q = $('search').value.trim().toLocaleLowerCase();
-  const digits = q.replace(/\D/g, '');
+function inTab(p, tab) {
+  if (tab === 'group') return !!inGroup(p);
   const filter = $('otherFilter').value;
-  return state.people.filter((p) => {
-    if (state.tab === 'group') {
-      if (!inGroup(p)) return false;
-    } else {
-      if (inGroup(p) && !state.justAdded.has(p.id)) return false;
-      if (filter === 'none' && p.groupIds.some((g) => g !== state.groupRes)) return false;
-      if (filter !== 'all' && filter !== 'none' && !p.groupIds.includes(filter)) return false;
-    }
-    if (!q) return true;
-    return p.name.toLocaleLowerCase().includes(q) ||
-      p.notes.toLocaleLowerCase().includes(q) ||
-      (digits.length >= 3 && p.phone.replace(/\D/g, '').includes(digits));
-  });
+  if (inGroup(p) && !state.justAdded.has(p.id)) return false;
+  if (filter === 'none' && p.groupIds.some((g) => g !== state.groupRes)) return false;
+  if (filter !== 'all' && filter !== 'none' && !p.groupIds.includes(filter)) return false;
+  return true;
+}
+
+// Search ignores capitals and accents; 3 or more digits also match phone numbers.
+function matcher() {
+  const raw = $('search').value.trim();
+  if (!raw) return () => true;
+  const q = fold(raw);
+  const digits = raw.replace(/\D/g, '');
+  return (p) => fold(p.name).includes(q) || fold(p.notes).includes(q) ||
+    (digits.length >= 3 && p.phone.replace(/\D/g, '').includes(digits));
+}
+
+function visiblePeople() {
+  const match = matcher();
+  return state.people.filter((p) => inTab(p, state.tab) && match(p));
+}
+
+// While searching, say how many matches sit in the other tab.
+function renderElsewhere() {
+  const box = $('elsewhere');
+  const other = state.tab === 'group' ? 'other' : 'group';
+  const n = $('search').value.trim() ? state.people.filter((p) => !inTab(p, state.tab) && matcher()(p)).length : 0;
+  box.hidden = n === 0;
+  if (!n) return;
+  const label = other === 'group' ? state.groupName : 'Other contacts';
+  const b = el('button', 'ghost', `${n} more match${n === 1 ? '' : 'es'} in ${label} →`);
+  b.onclick = () => { if (other === 'other') $('otherFilter').value = 'all'; switchTab(other); };
+  box.replaceChildren(b);
 }
 
 function fillOtherFilter() {
@@ -291,6 +309,7 @@ function render() {
   const people = visiblePeople();
   list.replaceChildren(...people.map(rowFor));
   $('empty').hidden = people.length > 0 || state.people.length === 0;
+  renderElsewhere();
   state.focusIndex = Math.min(state.focusIndex, people.length - 1);
   highlight();
 }
@@ -379,6 +398,23 @@ async function toggleGroup(p, box, li) {
   }
 }
 
+// ---------- Delete ----------
+
+async function deleteContact(p) {
+  const who = p.name || p.phone || 'this contact';
+  if (!confirm(`Delete ${who} from your Google Contacts?\n\nThis removes the whole contact, with its phone numbers and notes, on all your devices.`)) return;
+  status('Deleting…', false, true);
+  try {
+    await enqueue(p, () => api(`/${p.id}:deleteContact`, { method: 'DELETE' }));
+    state.people = state.people.filter((x) => x !== p);
+    state.justAdded.delete(p.id);
+    status(`Deleted ${who}.`);
+    render();
+  } catch (e) {
+    status('Could not delete: ' + e.message, true, true);
+  }
+}
+
 // ---------- Edit dialog ----------
 
 let editing = null;
@@ -399,7 +435,9 @@ $('editForm').addEventListener('keydown', (e) => {
 
 $('editDialog').addEventListener('close', async () => {
   const p = editing; editing = null;
-  if ($('editDialog').returnValue !== 'save' || !p) return;
+  if (!p) return;
+  if ($('editDialog').returnValue === 'delete') { deleteContact(p); return; }
+  if ($('editDialog').returnValue !== 'save') return;
   const name = $('editName').value.trim();
   const phone = $('editPhone').value.trim();
   const notes = $('editNotes').value;
@@ -454,6 +492,7 @@ document.addEventListener('keydown', (e) => {
     case '1': switchTab('group'); break;
     case '2': switchTab('other'); break;
     case 'r': loadAll(); break;
+    case 'Delete': if (p) deleteContact(p); break;
     default: return;
   }
   e.preventDefault();

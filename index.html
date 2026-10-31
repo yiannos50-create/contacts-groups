@@ -70,6 +70,7 @@
 
       <ul id="list" class="list"></ul>
       <p id="empty" class="empty" hidden>No contacts here.</p>
+      <p id="elsewhere" class="empty" hidden></p>
     </section>
 
     <p id="status" class="status" aria-live="polite"></p>
@@ -83,6 +84,8 @@
       <label>Notes <textarea id="editNotes" rows="5"></textarea></label>
       <p class="hint" id="editHint"></p>
       <div class="dialog-actions">
+        <button value="delete" class="danger" formnovalidate>Delete contact</button>
+        <span class="spacer"></span>
         <button value="cancel" class="ghost" formnovalidate>Cancel</button>
         <button value="save" class="primary">Save  (Ctrl+Enter)</button>
       </div>

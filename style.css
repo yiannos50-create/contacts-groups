@@ -121,3 +121,5 @@ dialog::backdrop { background: rgba(0,0,0,.4); }
 }
 
 .picks { display: flex; flex-wrap: wrap; gap: 6px; }
+button.danger { color: var(--danger); border-color: var(--danger); background: transparent; }
+.dialog-actions .spacer { flex: 1; }
